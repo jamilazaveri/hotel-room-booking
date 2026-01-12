@@ -1,0 +1,87 @@
+import mysql.connector
+from datetime import datetime
+
+
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="jamilazaveri",
+    database="hotel_db"
+)
+
+cursor = conn.cursor()
+
+# Show available rooms
+def show_rooms():
+    cursor.execute("SELECT * FROM rooms WHERE status='available'")
+    rooms = cursor.fetchall()
+    print("\nAvailable Rooms:")
+    for room in rooms:
+        print(room)
+
+# Book a room
+def book_room():
+    room_no = int(input("Enter room number: "))
+    cursor.execute(
+        "UPDATE rooms SET status='booked' WHERE room_no=%s",
+        (room_no,)
+    )
+    conn.commit()
+    print("Room booked successfully.")
+
+# Generate bill
+def generate_bill():
+    try:
+        room_no = int(input("Enter room number: "))
+        check_in = input("Enter check-in date (YYYY-MM-DD): ")
+        check_out = input("Enter check-out date (YYYY-MM-DD): ")
+
+        cursor.execute(
+            "SELECT price FROM rooms WHERE room_no=%s",
+            (room_no,)
+        )
+        price = cursor.fetchone()[0]
+
+        in_date = datetime.fromisoformat(check_in)
+        out_date = datetime.fromisoformat(check_out)
+
+        days = (out_date - in_date).days
+
+        if days <= 0:
+            print("Check-out date must be after check-in date.")
+            return
+
+        total = days * price
+        print("Total Bill Amount:", total)
+
+    except ValueError:
+        print("Invalid date format. Please enter date as YYYY-MM-DD.")
+     
+     
+    cursor.execute(
+        "UPDATE rooms SET status='available' WHERE room_no=%s",
+        (room_no,)
+    )
+    conn.commit()
+
+    print("Room released and available again.")
+
+# Menu
+while True:
+    print("\n1. View Rooms")
+    print("2. Book Room")
+    print("3. Generate Bill")
+    print("4. Exit")
+
+    choice = input("Enter choice: ")
+
+    if choice == '1':
+        show_rooms()
+    elif choice == '2':
+        book_room()
+    elif choice == '3':
+        generate_bill()
+    else:
+        break
+
+conn.close()
